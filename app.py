@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/'
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls', 'csv'}
 
 @app.route('/', methods=['GET'])
 def index():
@@ -31,8 +31,13 @@ def upload_file():
         filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filename)
 
-        # Filter the exporters from the Excel file
-        filtered_data = filter_exporters(filename, group_name)
+        try:
+            # Filter the exporters from the uploaded file
+            filtered_data = filter_exporters(filename, group_name)
+        except Exception as e:
+            # Handle the exception, possibly by flashing a message to the user
+            print("Error processing the file:", e)
+            return redirect(request.url)
 
         # Generate the bookmarks HTML
         bookmarks_html = generate_bookmarks_html(filtered_data)
@@ -52,8 +57,16 @@ def upload_file():
     return 'File upload error'
 
 def filter_exporters(filepath, group_name):
-    # Read the Excel file
-    df = pd.read_excel(filepath, engine='openpyxl')
+    # Determine the file extension
+    file_extension = filepath.rsplit('.', 1)[1].lower()
+
+    # Read the file based on its extension
+    if file_extension in ['xlsx', 'xls']:
+        df = pd.read_excel(filepath, engine='openpyxl')
+    elif file_extension == 'csv':
+        df = pd.read_csv(filepath)
+    else:
+        raise ValueError("Unsupported file type")
 
     # Define the exporters to look for
     exporters = ['exporter_aes', 'exporter_avayasbc', 'exporter_acm']
