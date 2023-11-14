@@ -5,6 +5,12 @@ import pandas as pd
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/'
 
+non_standard_url_map = {
+    'exporter_avayasbc': '/sbc',
+    'exporter_ams': ':8443/emlogin',
+    'exporter_voiceportal': ':5432'
+}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls', 'csv'}
 
@@ -118,7 +124,21 @@ def generate_bookmarks_html(filtered_data):
                 for item in filtered_data:
                     if item['Group Name'] == group and item['Country'] == country and item['Location'] == location:
                         exporter_type = item['Exporter Type'].split('_')[-1]  # Extract the type from the full exporter name
-                        url = f"https://{item['IP Address']}"
+
+                        # Check if exporter type is in non_standard_url_map
+                        if item['Exporter Type'] in non_standard_url_map:
+                            # Non-standard URL
+                            url_part = non_standard_url_map[item['Exporter Type']]
+                            if url_part.startswith(':'):
+                                # Port based URL
+                                url = f"https://{item['IP Address']}{url_part}"
+                            else:
+                                # Path based URL
+                                url = f"https://{item['IP Address']}{url_part}"
+                        else:
+                            # Standard URL
+                            url = f"https://{item['IP Address']}"
+
                         bookmarks_html += f"                <DT><A HREF=\"{url}\">{exporter_type}</A>\n"
                 
                 bookmarks_html += "            </DL><p>\n"
