@@ -92,54 +92,45 @@ def filter_exporters(filepath, group_name):
                         'Country': row['Country'],
                         'Location': row['Location'],
                         'Exporter Type': exporter,
-                        'IP Address': row['IP Address']
+                        'IP Address': row['IP Address'],
+                        'Hostname': row.get('Hostname', 'Unknown')
                     })
 
     return filtered_rows
 
 def generate_bookmarks_html(filtered_data):
-    # Start the HTML string for the bookmarks
     bookmarks_html = "<!DOCTYPE NETSCAPE-Bookmark-file-1>\n"
     bookmarks_html += "<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n"
     bookmarks_html += "<TITLE>Bookmarks</TITLE>\n"
     bookmarks_html += "<H1>Bookmarks Menu</H1>\n"
     bookmarks_html += "<DL><p>\n"
     
-    # Add Group Name folders
     for group in set(item['Group Name'] for item in filtered_data):
         bookmarks_html += f"    <DT><H3>{group}</H3>\n"
         bookmarks_html += "    <DL><p>\n"
         
-        # Add Country folders
         for country in set(item['Country'] for item in filtered_data if item['Group Name'] == group):
             bookmarks_html += f"        <DT><H3>{country}</H3>\n"
             bookmarks_html += "        <DL><p>\n"
             
-            # Add Location folders
             for location in set(item['Location'] for item in filtered_data if item['Group Name'] == group and item['Country'] == country):
                 bookmarks_html += f"            <DT><H3>{location}</H3>\n"
                 bookmarks_html += "            <DL><p>\n"
                 
-                # Add exporter bookmarks
                 for item in filtered_data:
                     if item['Group Name'] == group and item['Country'] == country and item['Location'] == location:
-                        exporter_type = item['Exporter Type'].split('_')[-1]  # Extract the type from the full exporter name
+                        exporter_type = item['Exporter Type'].split('_')[-1]
+                        
+                        # Combine exporter type with hostname
+                        bookmark_text = f"{exporter_type}-{item['Hostnames']}" 
 
-                        # Check if exporter type is in non_standard_url_map
                         if item['Exporter Type'] in non_standard_url_map:
-                            # Non-standard URL
                             url_part = non_standard_url_map[item['Exporter Type']]
-                            if url_part.startswith(':'):
-                                # Port based URL
-                                url = f"https://{item['IP Address']}{url_part}"
-                            else:
-                                # Path based URL
-                                url = f"https://{item['IP Address']}{url_part}"
+                            url = f"https://{item['IP Address']}{url_part}" if url_part.startswith(':') else f"https://{item['IP Address']}{url_part}"
                         else:
-                            # Standard URL
                             url = f"https://{item['IP Address']}"
 
-                        bookmarks_html += f"                <DT><A HREF=\"{url}\">{exporter_type}</A>\n"
+                        bookmarks_html += f"                <DT><A HREF=\"{url}\">{bookmark_text}</A>\n"
                 
                 bookmarks_html += "            </DL><p>\n"
             bookmarks_html += "        </DL><p>\n"
@@ -148,6 +139,7 @@ def generate_bookmarks_html(filtered_data):
     bookmarks_html += "</DL><p>\n"
     
     return bookmarks_html
+
 
 @app.route('/downloads/<filename>', methods=['GET'])
 def download_file(filename):
