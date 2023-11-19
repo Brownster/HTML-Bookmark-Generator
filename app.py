@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = '/tmp/'
 
 non_standard_url_map = {
-    'exporter_avayasbc': '/sbc',
+    'exporter_ems': '/sbc',
     'exporter_ams': ':8443/emlogin',
     'exporter_voiceportal': ':5432'
 }
